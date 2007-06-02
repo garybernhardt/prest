@@ -4,12 +4,10 @@ import urllib
 import logging
 import traceback
 import md5
-import sha
-from threading import Lock
 
 import cjson
 
-from bb.common.util import build_auth_header, locked
+from bb.common.util import build_auth_header
 
 
 HOST = 'api.bitbacker.com'
