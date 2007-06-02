@@ -10,7 +10,6 @@ from threading import Lock
 import cjson
 
 from bb.common.util import build_auth_header, locked
-from bb.common.cache import ChunkCache
 
 
 HOST = 'api.bitbacker.com'
@@ -28,11 +27,8 @@ class RequestError(RuntimeError):
 
 
 class WebClient:
-    def __init__(self, username, password, cache_dir):
+    def __init__(self, username, password):
         self.username, self.password = username, password
-        # XXX: the cache doesn't belong here; this object never even uses it.
-        if cache_dir is not None:
-            self.chunk_cache = ChunkCache(cache_dir)
 
     def request(self, verb, url, raw_data, data):
         retries = RETRIES
