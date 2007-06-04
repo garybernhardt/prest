@@ -4,6 +4,7 @@ import urllib
 import logging
 import traceback
 import md5
+import time
 
 import cjson
 
@@ -27,6 +28,11 @@ class RequestError(RuntimeError):
 class WebClient:
     def __init__(self, username, password):
         self.username, self.password = username, password
+        self.upload_rate = 0
+
+    def set_upload_rate(self, rate):
+        """Set the upload speed rate in bytes per second"""
+        self.upload_rate = rate
 
     def request(self, verb, url, raw_data, data):
         retries = RETRIES
@@ -50,6 +56,7 @@ class WebClient:
 
         if verb in ('POST', 'PUT'):
             headers['content-md5'] = md5.new(data).hexdigest()
+            headers['content-length'] = len(data)
 
         # Add the authorization header
         if self.username is not None and self.password is not None:
@@ -69,20 +76,32 @@ class WebClient:
         return data
 
     def send_request(self, conn, headers, verb, url, data):
-        if verb == 'GET':
-            encoded_args = urllib.urlencode(data)
-            if encoded_args:
-                url += '?' + encoded_args
-            conn.request(verb, url, None, headers)
-        elif verb == 'POST':
-            conn.request(verb, url, data, headers)
-        elif verb == 'PUT':
-            conn.request(verb, url, data, headers)
-        elif verb == 'DELETE':
-            conn.request(verb, url, None, headers)
-        else:
-            # XXX: Raise a more specific exception
-            raise RequestError('Unknown HTTP verb: %s' % verb)
+        conn.putrequest(verb, url)
+
+        for key, value in headers.iteritems():
+            conn.putheader(key, value)
+        conn.endheaders()
+
+        if verb in ('POST', 'PUT'):
+            if self.upload_rate:
+                # Break the data up into slices based on our upload_rate.
+                SLICES = 10
+                BLOCK_SIZE = self.upload_rate / SLICES
+                SLICE_TIME = 1.0 / SLICES
+                offset = 0
+                last_time = time.time()
+
+                while offset < len(data):
+                    conn.send(data[offset:offset + BLOCK_SIZE])
+                    offset += BLOCK_SIZE
+                    now = time.time()
+                    duration, last_time = now - last_time, now
+                    sleep_time = SLICE_TIME - duration
+                    if sleep_time > 0 and offset < len(data):
+                        time.sleep(sleep_time)
+
+            else:
+                conn.send(data)
 
     def read_response(self, conn, raw_data):
         resp = conn.getresponse()
