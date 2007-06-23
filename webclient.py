@@ -8,7 +8,7 @@ import time
 
 import cjson
 
-from bb.common.util import build_auth_header
+from bb.common.util import build_auth_header, TransferSpeed
 
 
 HOST = 'api.bitbacker.com'
@@ -29,6 +29,7 @@ class WebClient:
     def __init__(self, username, password):
         self.username, self.password = username, password
         self.upload_rate = 0
+        self.transfer_speed = TransferSpeed()
 
     def set_upload_rate(self, rate):
         """Set the upload speed rate in bytes per second"""
@@ -84,24 +85,21 @@ class WebClient:
 
         if verb in ('POST', 'PUT'):
             if self.upload_rate:
-                # Break the data up into slices based on our upload_rate.
-                SLICES = 10
-                BLOCK_SIZE = self.upload_rate / SLICES
-                SLICE_TIME = 1.0 / SLICES
+                BLOCK_SIZE = 512
                 offset = 0
-                last_time = time.time()
 
                 while offset < len(data):
+                    # Wait until we're slightly below our set upload rate
+                    # XXX: This is a lame way to do this
+                    while self.transfer_speed.rate > 0.9 * self.upload_rate:
+                        time.sleep(0.01)
                     conn.send(data[offset:offset + BLOCK_SIZE])
                     offset += BLOCK_SIZE
-                    now = time.time()
-                    duration, last_time = now - last_time, now
-                    sleep_time = SLICE_TIME - duration
-                    if sleep_time > 0 and offset < len(data):
-                        time.sleep(sleep_time)
+                    self.transfer_speed.update(min(BLOCK_SIZE, len(data)))
 
             else:
                 conn.send(data)
+                self.transfer_speed.update(len(data))
 
     def read_response(self, conn, raw_data):
         resp = conn.getresponse()
