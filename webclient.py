@@ -5,6 +5,7 @@ import logging
 import traceback
 import md5
 import time
+import socket
 
 import cjson
 
@@ -17,6 +18,13 @@ RETRIES = 10
 
 
 logger = logging.getLogger('common.webclient')
+
+
+# Set the socket timeout to 2 minutes.
+# XXX: Is this safe?  What if the API server is overloaded, and some requests
+# actually take more than 2 minutes?  The client will then start retrying
+# and make the situation even worse.
+socket.setdefaulttimeout(120)
 
 
 class RequestError(RuntimeError):
