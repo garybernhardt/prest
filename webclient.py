@@ -17,6 +17,15 @@ ROOT = ''
 RETRIES = 10
 
 
+MIN_BLOCK_SIZE = 512 # Minimum block size - if our upload rate is
+                     # capped at 1K/s, we don't want to be sending
+                     # 62.5 byte packets.
+BLOCKS_PER_SECOND = 16 # Number of send() calls per second when our
+                       # uploads are rate limited
+RATE_LIMIT_SLEEP_TIME = 0.1 # Number of seconds to sleep if we're over
+                            # our rate limit
+
+
 logger = logging.getLogger('common.webclient')
 
 
@@ -93,17 +102,17 @@ class WebClient:
 
         if verb in ('POST', 'PUT'):
             if self.upload_rate:
-                BLOCK_SIZE = 512
+                BLOCK_SIZE = max(MIN_BLOCK_SIZE,
+                                 self.upload_rate / BLOCKS_PER_SECOND)
                 offset = 0
 
                 while offset < len(data):
-                    # Wait until we're slightly below our set upload rate
-                    # XXX: This is a lame way to do this
-                    while self.transfer_speed.rate > 0.9 * self.upload_rate:
-                        time.sleep(0.01)
-                    conn.send(data[offset:offset + BLOCK_SIZE])
+                    block = data[offset:offset + BLOCK_SIZE]
+                    while self.transfer_speed.rate > self.upload_rate:
+                        time.sleep(RATE_LIMIT_SLEEP_TIME)
+                    conn.send(block)
+                    self.transfer_speed.update(len(block))
                     offset += BLOCK_SIZE
-                    self.transfer_speed.update(min(BLOCK_SIZE, len(data)))
 
             else:
                 conn.send(data)
