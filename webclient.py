@@ -6,7 +6,6 @@ import traceback
 import md5
 import time
 import socket
-import zlib
 
 import cjson
 
@@ -134,8 +133,6 @@ class WebClient:
         elif raw_data:
             result = result
         else:
-            if resp.getheader('Content-Encoding') == 'gzip':
-                result = zlib.decompress(result)
             result = cjson.decode(result, all_unicode=True)
 
         return result
