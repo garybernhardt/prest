@@ -144,16 +144,25 @@ class WebClient:
     def single_request(self, verb, url, raw_data, data):
         conn = HTTPSConnection(HOST)
 
-        data = self.encode_payload(verb, raw_data, data)
-        headers = self.build_headers(verb, url, raw_data, data)
+        # For a GET, the data is a series of key=value pairs; for
+        # anything else, it's a payload
+        original_url = url
         url = urllib.quote("%s%s" % (ROOT, url))
+        if verb == 'GET' and data:
+            url += '?' + '&'.join('%s=%s' % (urllib.quote(key),
+                                             urllib.quote(value))
+                                  for key, value in data)
+            data = ''
+        else:
+            data = self.encode_payload(verb, raw_data, data)
+        headers = self.build_headers(verb, original_url, raw_data, data)
         self.send_request(conn, headers, verb, url, data)
 
         result = self.read_response(conn, raw_data)
 
         return result
 
-    def get(self, url, raw_data=False, **args):
+    def get(self, url, raw_data=False, args=None):
         return self.request('GET', url, raw_data, args)
 
     def post(self, url, raw_data=False, **args):
