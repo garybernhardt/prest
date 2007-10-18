@@ -15,7 +15,6 @@ from bb.common.util import build_auth_header, TransferSpeed
 
 HOST = 'api.bitbacker.com'
 ROOT = ''
-RETRIES = 10
 
 
 MIN_BLOCK_SIZE = 512 # Minimum block size - if our upload rate is
@@ -54,7 +53,10 @@ class WebClient:
         self.upload_rate = rate
 
     def request(self, verb, url, raw_data, data):
-        retries = RETRIES
+        # Do 3 retries with 3 seconds between, so 9 seconds total before we
+        # actually fail
+        retries, delay = 3, 3
+
         while True:
             try:
                 return self.single_request(
@@ -67,6 +69,7 @@ class WebClient:
                 if retries <= 0:
                     raise
                 retries -= 1
+                time.sleep(delay)
 
     def build_headers(self, verb, url, raw_data, data):
         headers = {
