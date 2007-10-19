@@ -55,7 +55,7 @@ class WebClient:
     def request(self, verb, url, raw_data, data):
         # Do 3 retries with 3 seconds between, so 9 seconds total before we
         # actually fail
-        retries, delay = 3, 3
+        retries, delay = 3, 1
 
         while True:
             try:
