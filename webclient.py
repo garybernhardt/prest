@@ -127,6 +127,9 @@ class WebClient:
         resp = conn.getresponse()
         if resp.status not in (200, 204):
             conn.close()
+            logger.info(('Raising a RequestError on status code %i, ' +
+                         'reason "%s", message "%s"') %
+                        (resp.status, resp.reason, resp.read()))
             raise RequestError(
                 '%i %s' % (resp.status, resp.reason), resp.status)
 
