@@ -43,8 +43,9 @@ class RequestError(RuntimeError):
 
 
 class WebClient:
-    def __init__(self, username, password):
+    def __init__(self, username, password, user_agent):
         self.username, self.password = username, password
+        self.user_agent = user_agent
         self.upload_rate = 0
         self.transfer_speed = TransferSpeed()
 
@@ -75,7 +76,8 @@ class WebClient:
         headers = {
             'content-type': 'application/json',
             'accept': 'application/json',
-            'accept-encoding': 'gzip'}
+            'accept-encoding': 'gzip',
+            'user-agent': self.user_agent}
 
         if verb in ('POST', 'PUT'):
             headers['content-md5'] = md5.new(data).hexdigest()
