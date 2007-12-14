@@ -37,9 +37,14 @@ socket.setdefaulttimeout(120)
 
 
 class RequestError(RuntimeError):
-    def __init__(self, message, status_code=None):
-        RuntimeError.__init__(self, message)
+    def __init__(self, status_code, reason, message):
         self.status_code = status_code
+        self.reason = reason
+        self.message = message
+        RuntimeError.__init__(self, '%i %s (%s)' %
+                              (self.status_code,
+                               self.reason,
+                               self.message))
 
 
 class WebClient:
@@ -129,25 +134,29 @@ class WebClient:
         resp = conn.getresponse()
         if resp.status not in (200, 204):
             conn.close()
+            message = resp.read()
             logger.info(('Raising a RequestError on status code %i, ' +
                          'reason "%s", message "%s"') %
-                        (resp.status, resp.reason, resp.read()))
-            raise RequestError(
-                '%i %s' % (resp.status, resp.reason), resp.status)
+                        (resp.status, resp.reason, message))
+            raise RequestError(resp.status, resp.reason, message)
 
         result = resp.read()
         conn.close()
 
         if resp.status == 204:
+            content_type = None
             result = None
         elif raw_data:
+            content_type = 'application/octet-stream'
             result = result
         else:
             if resp.getheader('Content-Encoding') == 'gzip':
                 result = zlib.decompress(result)
+            content_type = resp.getheader('Content-Type',
+                                          'application/octet-stream')
             result = cjson.decode(result, all_unicode=True)
 
-        return result
+        return content_type, result
 
     def single_request(self, verb, url, raw_data, data):
         conn = HTTPSConnection(HOST)
@@ -166,9 +175,9 @@ class WebClient:
         headers = self.build_headers(verb, original_url, raw_data, data)
         self.send_request(conn, headers, verb, url, data)
 
-        result = self.read_response(conn, raw_data)
+        content_type, result = self.read_response(conn, raw_data)
 
-        return result
+        return content_type, result
 
     def get(self, url, raw_data=False, args=None):
         return self.request('GET', url, raw_data, args)
