@@ -69,9 +69,12 @@ class WebClient:
                     verb, url, raw_data, data)
             except:
                 logger.error(
-                    'An exception occurred in %s %s; %i retries left.  '
-                    'Traceback:\n%s' %
-                    (verb, url, retries, traceback.format_exc()))
+                    ('An exception occurred in %s %s; %i retries left.  '
+                     'Traceback:\n%s') %
+                    (verb,
+                     url.encode('utf-8'),
+                     retries,
+                     traceback.format_exc()))
                 if retries <= 0:
                     raise
                 retries -= 1
