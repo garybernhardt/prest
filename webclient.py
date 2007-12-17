@@ -7,6 +7,7 @@ import md5
 import time
 import socket
 import zlib
+from StringIO import StringIO
 
 import cjson
 
@@ -17,13 +18,12 @@ HOST = 'api.bitbacker.com'
 ROOT = ''
 
 
-MIN_BLOCK_SIZE = 512 # Minimum block size - if our upload rate is
-                     # capped at 1K/s, we don't want to be sending
-                     # 62.5 byte packets.
 BLOCKS_PER_SECOND = 16 # Number of send() calls per second when our
                        # uploads are rate limited
-RATE_LIMIT_SLEEP_TIME = 0.1 # Number of seconds to sleep if we're over
-                            # our rate limit
+
+# On any failing request, retry 3 times with 1 second between
+RETRIES = 3
+DELAY = 1
 
 
 logger = logging.getLogger('common.webclient')
@@ -47,6 +47,27 @@ class RequestError(RuntimeError):
                                self.message))
 
 
+def rate_limited_blocks(source_data, upload_rate):
+    """
+    Yield blocks of data, coming from the string source_data, at a rate that
+    ensures upload_rate is respected.
+    """
+    stream = StringIO(source_data)
+    block_size = upload_rate / BLOCKS_PER_SECOND
+    time_per_block = 1.0 / BLOCKS_PER_SECOND
+
+    while True:
+        block_start_time = time.time()
+        block = stream.read(block_size)
+        if not block:
+            break
+        yield block
+
+        block_elapsed = time.time() - block_start_time
+        sleep_time = time_per_block - block_elapsed
+        time.sleep(sleep_time)
+
+
 class WebClient:
     def __init__(self, username, password, user_agent):
         self.username, self.password = username, password
@@ -59,9 +80,7 @@ class WebClient:
         self.upload_rate = rate
 
     def request(self, verb, url, raw_data, data):
-        # Do 3 retries with 3 seconds between, so 9 seconds total before we
-        # actually fail
-        retries, delay = 3, 1
+        retries, delay = RETRIES, DELAY
 
         while True:
             try:
@@ -117,18 +136,9 @@ class WebClient:
 
         if verb in ('POST', 'PUT'):
             if self.upload_rate:
-                BLOCK_SIZE = max(MIN_BLOCK_SIZE,
-                                 self.upload_rate / BLOCKS_PER_SECOND)
-                offset = 0
-
-                while offset < len(data):
-                    block = data[offset:offset + BLOCK_SIZE]
-                    while self.transfer_speed.rate > self.upload_rate:
-                        time.sleep(RATE_LIMIT_SLEEP_TIME)
+                for block in rate_limited_blocks(data, self.upload_rate):
                     conn.send(block)
                     self.transfer_speed.update(len(block))
-                    offset += BLOCK_SIZE
-
             else:
                 conn.send(data)
                 self.transfer_speed.update(len(data))
