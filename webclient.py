@@ -119,12 +119,8 @@ class WebClient:
 
     def encode_payload(self, verb, raw_data, data):
         # If we're making a request that has a payload, we need to encode it
-        if verb in ('POST', 'PUT'):
-            if raw_data:
-                data = data['data']
-            else:
-                data = cjson.encode(data)
-
+        if verb in ('POST', 'PUT') and not raw_data:
+            data = cjson.encode(data)
         return data
 
     def send_request(self, conn, headers, verb, url, data):

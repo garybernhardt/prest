@@ -73,17 +73,23 @@ class Link(object):
                                   media_type,
                                   self._web_client)
 
-    def get(self, **args):
-        return self._build_resource(*self._web_client.get(self.href,
-                                                          **args))
+    def get(self, raw=False):
+        content_type, representation = self._web_client.request(
+            'GET', self.href, raw, None)
+        return self._build_resource(content_type, representation)
 
-    def post(self, **args):
-        return self._build_resource(*self._web_client.post(self.href, **args))
+    def post(self, payload, raw=False):
+        content_type, representation = self._web_client.request(
+            'POST', self.href, raw, payload)
+        return self._build_resource(content_type, representation)
 
-    def put(self, **args):
-        return self._build_resource(*self._web_client.put(self.href, **args))
+    def put(self, payload, raw=False):
+        content_type, representation = self._web_client.request(
+            'PUT', self.href, raw, payload)
+        return self._build_resource(content_type, representation)
 
-    def delete(self, **args):
-        return self._build_resource(*self._web_client.delete(self.href,
-                                                             **args))
+    def delete(self, raw=False):
+        content_type, representation = self._web_client.request(
+            'DELETE', self.href, raw, None)
+        return self._build_resource(content_type, representation)
 
