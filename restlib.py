@@ -45,10 +45,14 @@ class Resource:
         else:
             return representation
 
-    get = lambda self, *args, **kwargs: self._link.get(*args, **kwargs)
-    put = lambda self, *args, **kwargs: self._link.put(*args, **kwargs)
-    post = lambda self, *args, **kwargs: self._link.post(*args, **kwargs)
-    delete = lambda self, *args, **kwargs: self._link.delete(*args, **kwargs)
+    def get(self, raw=False):
+        return self._link.get(raw=raw)
+    def put(self, raw=False):
+        return self._link.put(self, raw=raw)
+    def post(self, payload, raw=False):
+        return self._link.post(payload, raw=raw)
+    def delete(self):
+        return self._link.delete()
 
 
 class ListResource(Resource, UserList):
