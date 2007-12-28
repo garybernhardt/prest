@@ -21,7 +21,6 @@ class Resource:
     def __init__(self, href, representation, web_client):
         self.href = href
         self._link = Link(href, web_client)
-        self.data = _add_links(representation, web_client)
         self._web_client = web_client
 
     def refresh(self):
@@ -47,22 +46,33 @@ class Resource:
 
     def get(self, raw=False):
         return self._link.get(raw=raw)
-    def put(self, raw=False):
-        return self._link.put(self, raw=raw)
     def post(self, payload, raw=False):
         return self._link.post(payload, raw=raw)
+    def put(self, raw=False):
+        return self._link.put(self, raw=raw)
     def delete(self):
         return self._link.delete()
 
 
-class ListResource(Resource, UserList):
-    def __init__(self, *args, **kwargs):
-        UserList.__init__(self)
-        Resource.__init__(self, *args, **kwargs)
-class DictResource(Resource, UserDict):
-    def __init__(self, *args, **kwargs):
-        UserDict.__init__(self)
-        Resource.__init__(self, *args, **kwargs)
+class ListResource(Resource, list):
+    def __init__(self, href, representation, web_client):
+        list.__init__(self, _add_links(representation, web_client))
+        Resource.__init__(self, href, representation, web_client)
+
+    def refresh(self):
+        while self:
+            self.pop()
+        self.extend(_add_links(self._link.get(), self._web_client))
+
+
+class DictResource(Resource, dict):
+    def __init__(self, href, representation, web_client):
+        dict.__init__(self, _add_links(representation, web_client))
+        Resource.__init__(self, href, representation, web_client)
+
+    def refresh(self):
+        self.clear()
+        self.update(_add_links(self._link.get(), self._web_client))
 
 
 class RestlibUnicode(unicode):
