@@ -5,15 +5,14 @@ from UserDict import UserDict
 def _add_links(node, web_client):
     if isinstance(node, list):
         return [_add_links(item, web_client) for item in node]
-
-    # A link is a dictionary of the form {'href': '<actual href>'}
-    elif isinstance(node, dict) and node.keys() == ['href']:
-        return Link(node['href'], web_client)
-
+    elif isinstance(node, unicode):
+        return RestlibUnicode(node, web_client)
+    elif isinstance(node, str):
+        raise ValueError(
+            "restlib doesn't support str; this shouldn't happen!")
     elif isinstance(node, dict):
         return dict((k, _add_links(v, web_client))
                     for k, v in node.iteritems())
-
     else:
         return node
 
@@ -62,10 +61,17 @@ class DictResource(Resource, UserDict):
         Resource.__init__(self, *args, **kwargs)
 
 
-class Link(object):
-    def __init__(self, href, web_client):
+class RestlibUnicode(unicode):
+    """
+    Any string in the JSON data is potentially a link, so all strings in the
+    JSON data are returned as instances of this class, which has get, post,
+    put, and delete methods.
+    """
+    def __new__(cls, href, web_client):
+        self = unicode.__new__(cls, href)
         self.href = href
         self._web_client = web_client
+        return self
 
     def _build_resource(self, media_type, representation):
         return Resource.construct(self.href,
@@ -89,4 +95,12 @@ class Link(object):
 
     def delete(self, raw=False):
         return self.request('DELETE', raw, None)
+
+
+class Link(RestlibUnicode):
+    """
+    This is the same as the RestlibUnicode class, but is used when we know the
+    thing we're talking about is actually a link.
+    """
+    pass
 
