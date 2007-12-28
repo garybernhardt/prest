@@ -79,7 +79,7 @@ class WebClient:
         """Set the upload speed rate in bytes per second"""
         self.upload_rate = rate
 
-    def request(self, verb, url, raw_data, data):
+    def request(self, verb, url, raw_data=False, data=None):
         retries, delay = RETRIES, DELAY
 
         while True:
@@ -187,16 +187,4 @@ class WebClient:
         content_type, result = self.read_response(conn, raw_data)
 
         return content_type, result
-
-    def get(self, url, raw_data=False, args=None):
-        return self.request('GET', url, raw_data, args)
-
-    def post(self, url, raw_data=False, **args):
-        return self.request('POST', url, raw_data, args)
-
-    def put(self, url, raw_data=False, **args):
-        return self.request('PUT', url, raw_data, args)
-
-    def delete(self, url, raw_data=False, **args):
-        return self.request('DELETE', url, raw_data, args)
 
