@@ -101,10 +101,13 @@ class WebClient:
 
     def build_headers(self, verb, url, raw_data, data):
         headers = {
-            'content-type': 'application/json',
             'accept': 'application/json',
             'accept-encoding': 'gzip',
             'user-agent': self.user_agent}
+        if raw_data:
+            headers['content-type'] = 'application/octet-stream'
+        else:
+            headers['content-type'] = 'application/json'
 
         if verb in ('POST', 'PUT'):
             headers['content-md5'] = md5.new(data).hexdigest()
