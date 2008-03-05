@@ -64,7 +64,7 @@ def rate_limited_blocks(source_data, upload_rate):
         yield block
 
         block_elapsed = time.time() - block_start_time
-        sleep_time = time_per_block - block_elapsed
+        sleep_time = max(0, time_per_block - block_elapsed)
         time.sleep(sleep_time)
 
 
