@@ -27,8 +27,8 @@ class Resource:
         self.data = _add_links(self._link.get(), self._web_client)
 
     @classmethod
-    def bookmark(cls, href, web_client):
-        return Link(href, web_client).get()
+    def bookmark(cls, href, web_client, raw=False):
+        return Link(href, web_client).get(raw=raw)
 
     @classmethod
     def construct(cls, href, representation, media_type, web_client):
