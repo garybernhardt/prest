@@ -1,4 +1,5 @@
 import os
+import httplib
 from httplib import HTTPSConnection
 import urllib
 import logging
@@ -82,22 +83,31 @@ class WebClient:
     def request(self, verb, url, raw_data=False, data=None):
         retries, delay = RETRIES, DELAY
 
+        def retry():
+            logger.error(
+                ('An exception occurred in %s %s; %i retries left.  '
+                 'Traceback:\n%s') %
+                (verb,
+                 url.encode('utf-8'),
+                 retries,
+                 traceback.format_exc()))
+            if retries <= 0:
+                raise
+            retries -= 1
+            time.sleep(delay)
+
         while True:
             try:
                 return self.single_request(
                     verb, url, raw_data, data)
-            except:
-                logger.error(
-                    ('An exception occurred in %s %s; %i retries left.  '
-                     'Traceback:\n%s') %
-                    (verb,
-                     url.encode('utf-8'),
-                     retries,
-                     traceback.format_exc()))
-                if retries <= 0:
+            except RequestError, e:
+                # Only retry on a status code of 500
+                if e.status_code == httplib.INTERNAL_SERVER_ERROR:
+                    retry()
+                else:
                     raise
-                retries -= 1
-                time.sleep(delay)
+            except:
+                retry()
 
     def build_headers(self, verb, url, raw_data, data):
         headers = {
