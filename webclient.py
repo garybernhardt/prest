@@ -81,7 +81,9 @@ class WebClient:
         self.upload_rate = rate
 
     def request(self, verb, url, raw_data=False, data=None):
-        retries, delay = RETRIES, DELAY
+        # We keep the retry count in a list so the inner retry() function can
+        # change it
+        retries = [RETRIES]
 
         def retry():
             logger.error(
@@ -89,12 +91,12 @@ class WebClient:
                  'Traceback:\n%s') %
                 (verb,
                  url.encode('utf-8'),
-                 retries,
+                 retries[0],
                  traceback.format_exc()))
-            if retries <= 0:
+            if retries[0] <= 0:
                 raise
-            retries -= 1
-            time.sleep(delay)
+            retries[0] -= 1
+            time.sleep(DELAY)
 
         while True:
             try:
