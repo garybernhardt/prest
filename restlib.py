@@ -107,8 +107,6 @@ class RestlibUnicode(unicode):
 
         # The variable substitution will do nothing if there are no variables
         # to substitute
-        print self.href
-        print args
         href = self.href % args
         return self.request('GET', href, kwargs.get('raw', False), None)
 
