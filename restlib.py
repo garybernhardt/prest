@@ -87,8 +87,8 @@ class RestlibUnicode(unicode):
         self._web_client = web_client
         return self
 
-    def _build_resource(self, media_type, representation):
-        return Resource.construct(self.href,
+    def _build_resource(self, href, media_type, representation):
+        return Resource.construct(href,
                                   representation,
                                   media_type,
                                   self._web_client)
@@ -96,7 +96,7 @@ class RestlibUnicode(unicode):
     def request(self, verb, href, raw, payload):
         content_type, representation = self._web_client.request(
             verb, href, raw, payload)
-        return self._build_resource(content_type, representation)
+        return self._build_resource(href, content_type, representation)
 
     def get(self, *args, **kwargs):
         # This method uses kwargs for the 'raw' argument instead of a default
