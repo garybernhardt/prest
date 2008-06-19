@@ -70,7 +70,7 @@ def rate_limited_blocks(source_data, upload_rate):
 
 
 class WebClient:
-    def __init__(self, username, password, user_agent):
+    def __init__(self, user_agent, username=None, password=None):
         self.username, self.password = username, password
         self.user_agent = user_agent
         self.upload_rate = 0
@@ -202,4 +202,7 @@ class WebClient:
         content_type, result = self.read_response(conn, raw_data)
 
         return content_type, result
+
+    def with_credentials(self, username, password):
+        return WebClient(self.user_agent, username, password)
 
