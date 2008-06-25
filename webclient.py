@@ -154,7 +154,7 @@ class WebClient:
                 conn.send(data)
                 self.transfer_speed.update(len(data))
 
-    def read_response(self, conn, raw_data):
+    def read_response(self, conn):
         resp = conn.getresponse()
         if resp.status not in (200, 204):
             conn.close()
@@ -167,18 +167,17 @@ class WebClient:
         result = resp.read()
         conn.close()
 
+        content_type = resp.getheader('Content-Type')
         if resp.status == 204:
-            content_type = None
-            result = None
-        elif raw_data:
-            content_type = 'application/octet-stream'
-            result = result
-        else:
+            content_type, result = None, None
+        elif content_type == 'application/json':
             if resp.getheader('Content-Encoding') == 'gzip':
                 result = zlib.decompress(result)
-            content_type = resp.getheader('Content-Type',
-                                          'application/octet-stream')
             result = cjson.decode(result, all_unicode=True)
+        elif content_type == 'application/octet-stream':
+            pass
+        else:
+            raise ValueError('Unsupported Content-Type: %s' % content_type)
 
         return content_type, result
 
@@ -199,7 +198,7 @@ class WebClient:
         headers = self.build_headers(verb, original_url, raw_data, data)
         self.send_request(conn, headers, verb, url, data)
 
-        content_type, result = self.read_response(conn, raw_data)
+        content_type, result = self.read_response(conn)
 
         return content_type, result
 
