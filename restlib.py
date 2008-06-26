@@ -28,7 +28,7 @@ class Resource:
 
     @classmethod
     def bookmark(cls, href, web_client, raw=False):
-        return Link(href, web_client).get(raw=raw)
+        return Link(href, web_client).get()
 
     @classmethod
     def construct(cls, href, representation, media_type, web_client):
@@ -44,8 +44,8 @@ class Resource:
         else:
             return representation
 
-    def get(self, raw=False):
-        return self._link.get(raw=raw)
+    def get(self):
+        return self._link.get()
     def post(self, payload, raw=False):
         return self._link.post(payload, raw=raw)
     def put(self, raw=False):
@@ -98,17 +98,11 @@ class RestlibUnicode(unicode):
             verb, href, raw, payload)
         return self._build_resource(href, content_type, representation)
 
-    def get(self, *args, **kwargs):
-        # This method uses kwargs for the 'raw' argument instead of a default
-        # argument because it also catches varargs in 'args'.  If it was
-        # declared as get(self, raw=False, *args), and someone called it with
-        # get('some-variable'), then 'some-variable' would come in as 'raw',
-        # not as one of the args.
-
+    def get(self, *args):
         # The variable substitution will do nothing if there are no variables
         # to substitute
         href = self.href % args
-        return self.request('GET', href, kwargs.get('raw', False), None)
+        return self.request('GET', href, False, None)
 
     def post(self, payload, raw=False):
         return self.request('POST', self.href, raw, payload)
