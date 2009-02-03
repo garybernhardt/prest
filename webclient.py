@@ -30,11 +30,11 @@ DELAY = 1
 logger = logging.getLogger('common.webclient')
 
 
-# Set the socket timeout to 5 minutes.
+# Set the socket timeout.
 # XXX: Is this safe?  What if the API server is overloaded, and some requests
 # actually take more than 5 minutes?  The client will then start retrying
 # and make the situation even worse.
-socket.setdefaulttimeout(5 * 60)
+socket.setdefaulttimeout(15 * 60)
 
 
 class RequestError(RuntimeError):
