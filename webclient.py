@@ -22,9 +22,11 @@ ROOT = ''
 BLOCKS_PER_SECOND = 16 # Number of send() calls per second when our
                        # uploads are rate limited
 
-# On any failing request, retry 3 times with 1 second between
+# Failing requests will be retried with exponentially increasing delays. First
+# 4 seconds, then 8 seconds, then 16 seconds (= 28 seconds total delay, not
+# counting the time spent waiting for the failures).
 RETRIES = 3
-DELAY = 1
+DELAY = 4
 
 
 logger = logging.getLogger('common.webclient')
@@ -84,6 +86,7 @@ class WebClient:
         # We keep the retry count in a list so the inner retry() function can
         # change it
         retries = [RETRIES]
+        retry_delay = [DELAY]
 
         def retry():
             logger.error(
@@ -96,7 +99,8 @@ class WebClient:
             if retries[0] <= 0:
                 raise
             retries[0] -= 1
-            time.sleep(DELAY)
+            retry_delay[0] *= 2
+            time.sleep(retry_delay[0])
 
         while True:
             try:
