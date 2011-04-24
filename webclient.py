@@ -11,7 +11,7 @@ from StringIO import StringIO
 
 import cjson
 
-from bb.common.util import build_auth_header, TransferSpeed
+from bb.common.util import TransferSpeed
 
 
 HOST = 'api.bitbacker.com'
@@ -71,8 +71,7 @@ def rate_limited_blocks(source_data, upload_rate):
 
 
 class WebClient:
-    def __init__(self, user_agent, username=None, password=None):
-        self.username, self.password = username, password
+    def __init__(self, user_agent):
         self.user_agent = user_agent
         self.upload_rate = 0
         self.transfer_speed = TransferSpeed()
@@ -127,11 +126,6 @@ class WebClient:
         if verb in ('POST', 'PUT'):
             headers['content-md5'] = md5.new(data).hexdigest()
             headers['content-length'] = len(data)
-
-        # Add the authorization header
-        if self.username is not None and self.password is not None:
-            headers['authorization'] = build_auth_header(
-                verb, url, headers, self.username, self.password)
 
         return headers
 
@@ -204,7 +198,4 @@ class WebClient:
         content_type, result = self.read_response(conn)
 
         return content_type, result
-
-    def with_credentials(self, username, password):
-        return WebClient(self.user_agent, username, password)
 
