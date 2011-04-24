@@ -1,6 +1,6 @@
 from dingus import Dingus, DontCare
 
-from bb.common.restlib import Resource, Link
+from restlib import Resource, Link
 
 
 class WhenMakingRequests:
