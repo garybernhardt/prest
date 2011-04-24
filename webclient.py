@@ -1,4 +1,3 @@
-import os
 import httplib
 from httplib import HTTPSConnection
 import urllib
