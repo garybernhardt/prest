@@ -11,8 +11,6 @@ from StringIO import StringIO
 
 import cjson
 
-from bb.common.util import TransferSpeed
-
 
 HOST = 'api.bitbacker.com'
 ROOT = ''
@@ -20,6 +18,7 @@ ROOT = ''
 
 BLOCKS_PER_SECOND = 16 # Number of send() calls per second when our
                        # uploads are rate limited
+
 
 # Failing requests will be retried with exponentially increasing delays. First
 # 4 seconds, then 8 seconds, then 16 seconds (= 28 seconds total delay, not
@@ -198,4 +197,36 @@ class WebClient:
         content_type, result = self.read_response(conn)
 
         return content_type, result
+
+
+class TransferSpeed(object):
+    """
+    Usage:
+        ts = TransferSpeed()
+        ts.update(bytes_sent)
+        # (do stuff)
+        ts.update(bytes_sent)
+        print 'sent at', ts.rate, 'bytes per second'
+    The bytes_sent argument should always be relative - it's the number of
+    bytes sent since the last update() call.
+    """
+    WINDOW_SIZE = 3 # seconds
+
+    def __init__(self):
+        # samples are of the form (time, bytes_since_last_sample)
+        self.samples = []
+
+    def update(self, bytes_sent):
+        self.samples.append((time.time(), bytes_sent))
+        self._truncate()
+
+    def _truncate(self):
+        cutoff_time = time.time() - self.WINDOW_SIZE
+        while self.samples and self.samples[0][0] < cutoff_time:
+            self.samples.pop(0)
+
+    @property
+    def rate(self):
+        self._truncate()
+        return sum(size for time_, size in self.samples) / self.WINDOW_SIZE
 
